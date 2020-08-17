@@ -1,0 +1,306 @@
+import java.lang.Math.*;
+import java.util.*;
+
+class Processor {
+    int MEM_SIZE=100;
+    QBit[] mem = new QBit[MEM_SIZE];
+    int line=0;
+
+    void shot()
+    {
+        mem = new QBit[MEM_SIZE];
+        try {
+			compute("");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+    void reset()
+    {
+        mem = new QBit[MEM_SIZE];
+        for(int i =0; i<MEM_SIZE;i++)
+        	mem[i]=new QBit(1.0,0.0,QBit.QBIT_TYPE.PROBABILITY);
+    }
+
+    void set()
+    {
+        mem = new QBit[MEM_SIZE];
+        for(int i =0; i<MEM_SIZE;i++)
+        	mem[i]=new QBit(0.0,1.0,QBit.QBIT_TYPE.PROBABILITY);
+    }
+
+
+    int compute(String e) throws Exception
+    {
+           //.... compute instance of problem
+          // mem[1] = QBit(0.0, 1.0, QBit.QBIT_TYPE.PROBABILITY)
+
+           //Swap(mem[0], mem[1])
+           // mem[0]=T(mem[0])
+        //Parse i
+        line=0;
+        int maxq=0;
+        String[] a = e.split("\n");
+        for(int ii=0;ii<a.length;ii++)
+        {
+        	String i=a[ii];
+            line++;
+
+            if (i.trim().isEmpty())  //Riga vuota
+                continue;
+            
+            String[] inst = i.toUpperCase().split(" ");
+
+            // Istruzione non valida : non è composta da operatore e operando (2 argomenti)
+            if (inst.length!=2)
+                throw new Exception();
+
+            if (!inst[1].contains("Q")) // Instruzione non valida : mancano i qbits
+                throw new Exception();
+
+            String n=inst[1].trim().replace("Q","");
+            String[] args=n.split(",");
+            int ni1 = Integer.parseInt(args[0]);
+            int ni2 = 0;
+            double ni2d = 0.0;
+            if (args.length>1 && !args[1].contains("."))
+                ni2 = Integer.parseInt(args[1]);
+            if (args.length>1)
+                ni2d = Double.parseDouble(args[1]);
+            
+            QBit qbx = new QBit();
+
+            if (ni1>=MEM_SIZE || ni2>=MEM_SIZE)
+                throw new Exception();
+
+            switch(inst[0])
+            {
+            case "H" : {
+                    qbx=H(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "X" : {
+                    qbx=X(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "Y" : {
+                    qbx=Y(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "Z" : {
+                    qbx=Z(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "S" : {
+                    qbx=S(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "T" : {
+                    qbx=T(mem[ni1]);
+                    mem[ni1]=qbx;
+                }; break;
+                
+            case "CX" : {
+                    qbx=CNot(mem[ni1],mem[ni2]);
+                    mem[ni2]=qbx;
+                }; break;
+                
+            case "SWAP" : {
+                    Swap(mem[ni1],mem[ni2]);
+                }; break;
+                
+            case "MEASURE" : {
+                    if (ni1>maxq)
+                        maxq=ni1;
+                    if (ni2>maxq)
+                        maxq=ni2;
+                }; break;
+                
+            case "SET" : {
+                    Set(mem[ni1]);
+                }; break;
+                
+            case "SETX" : {
+                    SetX(mem[ni1],ni2d);
+                }; break;
+                
+            case "RESET" : {
+                    Reset(mem[ni1]);
+                }; break;
+                
+            default : {
+                    throw new Exception();
+                }
+            }
+        }
+        return maxq;
+    }
+
+    // Hadamard
+    QBit H(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.p0 = a.p0 + a.p1;
+        res.p0 = res.p0 / Math.sqrt(2.0);
+
+        res.p1 = a.p0 - a.p1;
+        res.p1 = res.p1 / Math.sqrt(2.0);
+
+        res.computeByProbability();
+
+        return res;
+
+    }
+
+    // Pauli-X
+    QBit X(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.p0 = a.p1;
+
+        res.p1 = a.p0;
+
+        res.computeByProbability();
+
+        return res;
+  }
+
+    // Pauli-Y
+    QBit Y(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.p0 = -a.p1;
+
+        res.p1 = a.p0;
+
+        res.computeByProbability();
+
+        return res;
+    }
+
+    // Pauli-Z
+    QBit Z(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.p0 = a.p0;
+
+        res.p1 = -a.p1;
+
+        res.computeByProbability();
+
+        return res;
+    }
+
+    // PHASE SQRT(Z)
+    QBit S(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.fi = a.fi + Math.PI/4.0;
+        res.teta = a.teta;
+
+        res.computeByBloch();
+
+        return res;
+    }
+
+    // PHASE SQRT(S)
+    QBit T(QBit a)
+    {
+        QBit res = new QBit();
+
+        res.fi = a.fi + Math.PI/2.0;
+        res.teta = a.teta;
+
+        res.computeByBloch();
+
+        return res;
+    }
+
+    //controlled NOT, a è il controllore
+    QBit CNot(QBit a, QBit b)
+    {
+        QBit res = new QBit();
+        double c=Math.pow(a.p1,2.0);
+
+        if (c>0.999)
+            res=X(b);
+        else
+            res=b;
+
+        return res;
+    }
+
+    //SWAP
+    QBit Swap(QBit a, QBit b)
+    {
+        QBit res = new QBit();
+        double p0=0.0;
+        double p1=0.0;
+
+        p0=a.p0;
+        p1=a.p1;
+        a.p0 = b.p0;
+        a.p1 = b.p1;
+        a.computeByProbability();
+        b.p0 = p0;
+        b.p1 = p1;
+        b.computeByProbability();
+
+        return res;
+    }
+
+    // Set
+    QBit Set(QBit a)
+    {
+        QBit res = a;
+
+        a.p1=1.0;
+        a.p0=0.0;
+        a.computeByProbability();
+
+        res=a;
+
+        return res;
+    }
+
+    // SetX
+    QBit SetX(QBit a, double p1)
+    {
+        QBit res = a;
+
+        a.p1= Math.sqrt(p1);
+        a.p0=Math.sqrt(1.0-p1);
+        a.computeByProbability();
+
+        res=a;
+
+        return res;
+    }
+
+    // Reset
+    QBit Reset(QBit a)
+    {
+        QBit res = a;
+
+        a.p1=0.0;
+        a.p0=1.0;
+        a.computeByProbability();
+
+        res=a;
+
+        return res;
+    }
+
+}
